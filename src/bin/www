@@ -1,0 +1,147 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('backend:server');
+var http = require('http');
+const { createSocketServer } = require('../routes/socket');  // socket.js에서 가져오기
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Setup Socket.io
+ */
+
+// const { io, users } = createSocketServer(server);
+const {io, users} = require('../routes/socket')(server); // socket.js 실행
+
+// const socket = require('../routes/socket')(server);
+// socket.io = socket.io || require('socket.io')(server); // io 할당
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+app.io = io;
+app.users = users;
+
+server.listen(port, '0.0.0.0');
+server.on('error', onError);
+server.on('listening', onListening);
+
+// async function cleanup() {
+//   console.log('서버 종료 정리 시작');
+
+//   try {
+//     // 🔹 소켓 종료
+//     if (io) {
+//       io.close();
+//     }
+
+//     // - 로그 저장
+//     console.log('112313213212332');
+
+//   } catch (err) {
+//     console.error('cleanup 에러:', err);
+//   }
+// }
+
+
+// async function shutdown(signal) {
+//   console.log(`종료 감지: ${signal}`);
+
+//   server.close(async () => {
+//     await cleanup();
+//     process.exit(0);
+//   });
+// }
+// // 🔥 핵심 2개
+// process.on('SIGINT', shutdown);   // ctrl + c
+// process.on('SIGTERM', shutdown);  // pm2, docker
+
+// // 🔥 에러 종료도 잡기
+// process.on('uncaughtException', async (err) => {
+//   console.error('uncaughtException:', err);
+//   await cleanup();
+//   process.exit(1);
+// });
+
+// process.on('unhandledRejection', async (err) => {
+//   console.error('unhandledRejection:', err);
+//   await cleanup();
+//   process.exit(1);
+// });
+
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
